@@ -1,0 +1,130 @@
+Project capstone_ecommerce {
+database_type: 'PostgreSQL'
+Note: 'Multi-Tenant E-Commerce Order Management System'
+}
+
+Table tenants {
+id uuid [pk]
+name varchar
+status varchar
+created_at timestamptz
+updated_at timestamptz
+}
+
+Table customers {
+id uuid [pk]
+tenant_id uuid [not null]
+first_name varchar
+last_name varchar
+email varchar
+phone varchar
+status varchar
+created_at timestamptz
+updated_at timestamptz
+}
+
+Table addresses {
+id uuid [pk]
+customer_id uuid [not null]
+address_line1 varchar
+city varchar
+country varchar
+postal_code varchar
+address_type varchar
+created_at timestamptz
+updated_at timestamptz
+}
+
+Table categories {
+id uuid [pk]
+tenant_id uuid [not null]
+name varchar
+description text
+created_at timestamptz
+updated_at timestamptz
+}
+
+Table products {
+id uuid [pk]
+tenant_id uuid [not null]
+category_id uuid [not null]
+sku varchar
+name varchar
+description text
+price numeric
+status varchar
+created_at timestamptz
+updated_at timestamptz
+}
+
+Table inventory {
+id uuid [pk]
+product_id uuid [not null, unique]
+quantity_on_hand integer
+reorder_level integer
+created_at timestamptz
+updated_at timestamptz
+}
+
+Table orders {
+id uuid [pk]
+tenant_id uuid [not null]
+customer_id uuid [not null]
+shipping_address_id uuid [not null]
+status varchar
+total_amount numeric
+created_at timestamptz
+updated_at timestamptz
+}
+
+Table order_items {
+id uuid [pk]
+order_id uuid [not null]
+product_id uuid [not null]
+quantity integer
+unit_price numeric
+created_at timestamptz
+}
+
+Table payments {
+id uuid [pk]
+order_id uuid [not null]
+amount numeric
+payment_method varchar
+payment_status varchar
+transaction_reference varchar
+paid_at timestamptz
+created_at timestamptz
+}
+
+Table audit_logs {
+id uuid [pk]
+tenant_id uuid
+actor_id uuid
+action varchar
+table_name varchar
+record_id uuid
+old_data jsonb
+new_data jsonb
+created_at timestamptz
+}
+
+Ref: tenants.id < customers.tenant_id
+Ref: customers.id < addresses.customer_id
+
+Ref: tenants.id < categories.tenant_id
+Ref: categories.id < products.category_id
+Ref: tenants.id < products.tenant_id
+
+Ref: products.id - inventory.product_id
+
+Ref: tenants.id < orders.tenant_id
+Ref: customers.id < orders.customer_id
+Ref: addresses.id < orders.shipping_address_id
+
+Ref: orders.id < order_items.order_id
+Ref: products.id < order_items.product_id
+
+Ref: orders.id < payments.order_id
+
+Ref: tenants.id < audit_logs.tenant_id
