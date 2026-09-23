@@ -1,36 +1,162 @@
 ============================================================
 DAY 4 PERFORMANCE BENCHMARK
 Query: Orders by customer ordered by creation date
+==================================================
+
+## QUERY
+
+SELECT *
+FROM orders
+WHERE customer_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+ORDER BY created_at DESC;
+
 ============================================================
-
 BEFORE INDEX
-------------
+============
 
-[PASTE THE COMPLETE EXPLAIN (ANALYZE, BUFFERS) OUTPUT HERE]
+Command:
 
+SET enable_seqscan = on;
 
-AFTER INDEX
------------
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM orders
+WHERE customer_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+ORDER BY created_at DESC;
 
-[PASTE THE COMPLETE EXPLAIN (ANALYZE, BUFFERS) OUTPUT HERE]
+Raw PostgreSQL output:
 
-
-INDEX USED
+SET
+QUERY PLAN
 ----------
 
+Sort  (cost=1.03..1.04 rows=1 width=95) (actual time=0.025..0.026 rows=1 loops=1)
+Sort Key: created_at DESC
+Sort Method: quicksort  Memory: 25kB
+Buffers: shared hit=4
+->  Seq Scan on orders  (cost=0.00..1.02 rows=1 width=95) (actual time=0.009..0.010 rows=1 loops=1)
+Filter: (customer_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid)
+Rows Removed by Filter: 1
+Buffers: shared hit=1
+Planning:
+Buffers: shared hit=165
+Planning Time: 0.326 ms
+Execution Time: 0.058 ms
+(12 rows)
+
+## BEFORE PLAN SUMMARY
+
+Scan method:
+Seq Scan on orders
+
+Additional operation:
+Sort by created_at DESC
+
+Execution Time:
+0.058 ms
+
+Planning Time:
+0.326 ms
+
+Buffers:
+shared hit=4 at Sort node
+shared hit=1 at Seq Scan node
+
+============================================================
+AFTER INDEX
+===========
+
+Index created:
+
+CREATE INDEX idx_orders_customer_created
+ON orders (customer_id, created_at DESC);
+
+Command:
+
+SET enable_seqscan = off;
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM orders
+WHERE customer_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+ORDER BY created_at DESC;
+
+Raw PostgreSQL output:
+
+SET
+QUERY PLAN
+----------
+
+Index Scan using idx_orders_customer_created on orders  (cost=0.13..8.14 rows=1 width=95) (actual time=0.008..0.008 rows=1 loops=1)
+Index Cond: (customer_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid)
+Buffers: shared hit=2
+Planning:
+Buffers: shared hit=165
+Planning Time: 0.376 ms
+Execution Time: 0.074 ms
+(7 rows)
+
+## AFTER PLAN SUMMARY
+
+Scan method:
+Index Scan using idx_orders_customer_created
+
+Index condition:
+customer_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+
+Sort:
+No explicit Sort node
+
+Execution Time:
+0.074 ms
+
+Planning Time:
+0.376 ms
+
+Buffers:
+shared hit=2
+
+============================================================
+BEFORE vs AFTER
+===============
+
+## Metric                         Before             After
+
+Scan method                    Seq Scan           Index Scan
+Index used                     No                 Yes
+Explicit Sort                  Yes                No
+Execution Time                 0.058 ms           0.074 ms
+Planning Time                  0.326 ms           0.376 ms
+Shared buffers                 4 at Sort          2
+1 at Seq Scan
+
+Index:
 idx_orders_customer_created
 (customer_id, created_at DESC)
 
+============================================================
+INTERPRETATION
+==============
 
-OBSERVATION
------------
+Before the index, PostgreSQL performed a sequential scan of the
+orders table and then used a Sort operation to order the matching
+rows by created_at DESC.
 
-Before the index, PostgreSQL used a sequential scan and then
-sorted the matching rows.
+After the composite index was available, PostgreSQL could use an
+Index Scan through idx_orders_customer_created. The index contains
+customer_id followed by created_at DESC, matching the filtering
+and ordering requirements of the query. The resulting plan has no
+explicit Sort node.
 
-After the index was created, PostgreSQL can use the
-idx_orders_customer_created index to locate rows for the
-customer and return them in created_at DESC order.
+The measured execution time in this small demo dataset was
+0.058 ms before the index and 0.074 ms after the index. The
+indexed plan was not faster in this particular tiny dataset.
+This is expected because the table contains only a very small
+number of rows, so sequential scanning is inexpensive.
 
-Execution time and buffer statistics are retained above as raw
-PostgreSQL EXPLAIN ANALYZE evidence.
+The purpose of this benchmark is therefore to demonstrate the
+change in PostgreSQL's execution strategy and provide raw
+EXPLAIN (ANALYZE, BUFFERS) evidence. With a substantially larger
+orders table, the composite index can reduce the amount of data
+that PostgreSQL must scan and can provide rows in the requested
+created_at DESC order without a separate Sort operation.
