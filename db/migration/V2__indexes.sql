@@ -63,3 +63,6 @@ CREATE INDEX idx_audit_logs_tenant_created
 
 CREATE INDEX idx_audit_logs_record
     ON audit_logs (table_name, record_id);
+    -- Optimization index for customer order history
+CREATE INDEX IF NOT EXISTS idx_orders_customer_created
+ON orders (customer_id, created_at DESC);
