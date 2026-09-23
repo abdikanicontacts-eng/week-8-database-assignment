@@ -1,30 +1,45 @@
-# Redis Shopping Cart Demo
+# Redis Shopping Cart Practical Demo
 
-# Day 3 NoSQL practical demonstration
+# Day 3 NoSQL implementation evidence
 
-# Create a demo shopping cart
+# Remove any previous demo cart
 
 DEL cart:demo:customer1
 
-HSET cart:demo:customer1 
-product:ELEC-001 2 
-product:ACC-001 1
+# Create a shopping cart using Redis Hash
+
+HSET cart:demo:customer1 product:ELEC-001 2 product:ACC-001 1
+
+# Keep the shopping cart for one hour
 
 EXPIRE cart:demo:customer1 3600
 
-# Read the cart
+# Read the complete shopping cart
 
 HGETALL cart:demo:customer1
 
-# Check remaining TTL
+# Verify the cart expiration time
 
 TTL cart:demo:customer1
 
-# Cache a frequently accessed product
+# Cache frequently accessed product information
 
 SET product:ELEC-001 "Wireless Headphones|59.99|active"
+
+# Keep the product cache for one hour
+
 EXPIRE product:ELEC-001 3600
 
-# Read cached product
+# Read the cached product
+
+GET product:ELEC-001
+
+# Simulate a product update in PostgreSQL.
+
+# The application invalidates the stale Redis cache.
+
+DEL product:ELEC-001
+
+# Verify that the stale product cache was removed
 
 GET product:ELEC-001
