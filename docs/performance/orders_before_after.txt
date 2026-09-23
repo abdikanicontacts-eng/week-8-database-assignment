@@ -1,0 +1,36 @@
+============================================================
+DAY 4 PERFORMANCE BENCHMARK
+Query: Orders by customer ordered by creation date
+============================================================
+
+BEFORE INDEX
+------------
+
+[PASTE THE COMPLETE EXPLAIN (ANALYZE, BUFFERS) OUTPUT HERE]
+
+
+AFTER INDEX
+-----------
+
+[PASTE THE COMPLETE EXPLAIN (ANALYZE, BUFFERS) OUTPUT HERE]
+
+
+INDEX USED
+----------
+
+idx_orders_customer_created
+(customer_id, created_at DESC)
+
+
+OBSERVATION
+-----------
+
+Before the index, PostgreSQL used a sequential scan and then
+sorted the matching rows.
+
+After the index was created, PostgreSQL can use the
+idx_orders_customer_created index to locate rows for the
+customer and return them in created_at DESC order.
+
+Execution time and buffer statistics are retained above as raw
+PostgreSQL EXPLAIN ANALYZE evidence.

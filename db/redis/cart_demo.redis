@@ -1,0 +1,30 @@
+# Redis Shopping Cart Demo
+
+# Day 3 NoSQL practical demonstration
+
+# Create a demo shopping cart
+
+DEL cart:demo:customer1
+
+HSET cart:demo:customer1 
+product:ELEC-001 2 
+product:ACC-001 1
+
+EXPIRE cart:demo:customer1 3600
+
+# Read the cart
+
+HGETALL cart:demo:customer1
+
+# Check remaining TTL
+
+TTL cart:demo:customer1
+
+# Cache a frequently accessed product
+
+SET product:ELEC-001 "Wireless Headphones|59.99|active"
+EXPIRE product:ELEC-001 3600
+
+# Read cached product
+
+GET product:ELEC-001

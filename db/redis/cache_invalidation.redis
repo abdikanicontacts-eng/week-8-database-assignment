@@ -1,0 +1,21 @@
+# Redis Cache Invalidation
+
+# Day 3 NoSQL practical demonstration
+
+# Create cached product data
+
+SET product:ELEC-001 "Wireless Headphones|59.99|active"
+
+# Verify cache
+
+GET product:ELEC-001
+
+# Product data changes in PostgreSQL.
+
+# The application invalidates the old Redis cache entry.
+
+DEL product:ELEC-001
+
+# Verify cache invalidation
+
+GET product:ELEC-001
